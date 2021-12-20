@@ -37,7 +37,7 @@ ftypePML distanceE(int N, int delta, int i)
 }
 
 template <class ftypePML>
-void Init_Sigma_SoA(std::vector<data3d<ftypePML> >& arr_sigma, double n,
+void Init_Sigma_SoA(Sigma<ftypePML>& arr_sigma, double n,
 	int Nx, int Ny, int Nz, int delta_x, int delta_y, int delta_z,
 	ftypePML sigma_x, ftypePML sigma_y)
 {
@@ -47,37 +47,33 @@ void Init_Sigma_SoA(std::vector<data3d<ftypePML> >& arr_sigma, double n,
 	
 	std::cout << var_Sigma_max_x << "  " << var_Sigma_max_y << "   " << var_Sigma_max_z << "    " << std::endl;
 
-	for (int i = 0; i < 6;++i) {
-		arr_sigma[i].Create(Nx, Ny, Nz, delta_x, delta_y, delta_z);
-	}
-
 	for (int i = 1; i < Nx + 2 * delta_x + 1; i++)
 		for (int j = 1; j < Ny + 2 * delta_y + 1; j++)
 			for (int k = 1; k < Nz + 2 * delta_z + 1; k++) {
-				arr_sigma[0](i, j, k) = var_Sigma_max_x * pow(distanceE<ftypePML>(Nx, delta_x, i), n);
-				arr_sigma[3](i, j, k) = var_Sigma_max_x * pow(distanceH<ftypePML>(Nx, delta_x, i), n);
+				arr_sigma.sigmaEx(i, j, k) = var_Sigma_max_x * pow(distanceE<ftypePML>(Nx, delta_x, i), n);
+				arr_sigma.sigmaBx(i, j, k) = var_Sigma_max_x * pow(distanceH<ftypePML>(Nx, delta_x, i), n);
 
-				arr_sigma[1](i, j, k) = var_Sigma_max_y * pow(distanceE<ftypePML>(Ny, delta_y, j), n);
-				arr_sigma[4](i, j, k) = var_Sigma_max_y * pow(distanceH<ftypePML>(Ny, delta_y, j), n);
+				arr_sigma.sigmaEy(i, j, k) = var_Sigma_max_y * pow(distanceE<ftypePML>(Ny, delta_y, j), n);
+				arr_sigma.sigmaBy(i, j, k) = var_Sigma_max_y * pow(distanceH<ftypePML>(Ny, delta_y, j), n);
 
-				arr_sigma[2](i, j, k) = var_Sigma_max_z * pow(distanceE<ftypePML>(Nz, delta_z, k), n);
-				arr_sigma[5](i, j, k) = var_Sigma_max_z * pow(distanceH<ftypePML>(Nz, delta_z, k), n);
+				arr_sigma.sigmaEz(i, j, k) = var_Sigma_max_z * pow(distanceE<ftypePML>(Nz, delta_z, k), n);
+				arr_sigma.sigmaBz(i, j, k) = var_Sigma_max_z * pow(distanceH<ftypePML>(Nz, delta_z, k), n);
 			}
 }
 
 template <class ftypePML, class ftype = double>
-void Init_Coeff_SoA(SplitFields<ftypePML>& split_field,
-	std::vector<data3d<ftypePML> >& Sigma, ftype dt) {
+void Init_Coeff_SoA(Coefficient<ftypePML>& arr_coef,
+	Sigma<ftypePML>& arr_sigma, ftype dt) {
 
 	double Exy1, Exz1, Ezx1, Ezy1, Eyx1, Eyz1;
 	double Bxy1, Bxz1, Bzx1, Bzy1, Byx1, Byz1;
 
-	int Nx = split_field.Exy.Get_Nx();
-	int Ny = split_field.Exy.Get_Ny();
-	int Nz = split_field.Exy.Get_Nz();
-	int delta_x = split_field.Exy.Get_deltaX();
-	int delta_y = split_field.Exy.Get_deltaY();
-	int delta_z = split_field.Exy.Get_deltaZ();
+	int Nx = arr_coef.Exy1.Get_Nx();
+	int Ny = arr_coef.Exy1.Get_Ny();
+	int Nz = arr_coef.Exy1.Get_Nz();
+	int delta_x = arr_coef.Exy1.Get_deltaX();
+	int delta_y = arr_coef.Exy1.Get_deltaY();
+	int delta_z = arr_coef.Exy1.Get_deltaZ();
 
 	for (int i = 1; i < Nx + 2 * delta_x + 1; i++)
 		for (int j = 1; j < Ny + 2 * delta_y + 1; j++)
@@ -86,75 +82,75 @@ void Init_Coeff_SoA(SplitFields<ftypePML>& split_field,
 					(j >= delta_y + 1) && (j < Ny + delta_y + 1) &&
 					(k >= delta_z + 1) && (k < Nz + delta_z + 1)){}
 				else {
-					Exy1 = exp(-dt * Sigma[1](i, j, k));
-					Exz1 = exp(-dt * Sigma[2](i, j, k));
-					Eyx1 = exp(-dt * Sigma[0](i, j, k));
-					Eyz1 = exp(-dt * Sigma[2](i, j, k));
-					Ezx1 = exp(-dt * Sigma[0](i, j, k));
-					Ezy1 = exp(-dt * Sigma[1](i, j, k));
+					Exy1 = exp(-dt * arr_sigma.sigmaEy(i, j, k));
+					Exz1 = exp(-dt * arr_sigma.sigmaEz(i, j, k));
+					Eyx1 = exp(-dt * arr_sigma.sigmaEx(i, j, k));
+					Eyz1 = exp(-dt * arr_sigma.sigmaEz(i, j, k));
+					Ezx1 = exp(-dt * arr_sigma.sigmaEx(i, j, k));
+					Ezy1 = exp(-dt * arr_sigma.sigmaEy(i, j, k));
 
-					Bxy1 = exp(-dt * Sigma[4](i, j, k));
-					Bxz1 = exp(-dt * Sigma[5](i, j, k));
-					Byx1 = exp(-dt * Sigma[3](i, j, k));
-					Byz1 = exp(-dt * Sigma[5](i, j, k));
-					Bzx1 = exp(-dt * Sigma[3](i, j, k));
-					Bzy1 = exp(-dt * Sigma[4](i, j, k));
+					Bxy1 = exp(-dt * arr_sigma.sigmaBy(i, j, k));
+					Bxz1 = exp(-dt * arr_sigma.sigmaBz(i, j, k));
+					Byx1 = exp(-dt * arr_sigma.sigmaBx(i, j, k));
+					Byz1 = exp(-dt * arr_sigma.sigmaBz(i, j, k));
+					Bzx1 = exp(-dt * arr_sigma.sigmaBx(i, j, k));
+					Bzy1 = exp(-dt * arr_sigma.sigmaBy(i, j, k));
 
-					split_field.coeff[0](i, j, k) = (ftypePML)Exy1;
-					split_field.coeff[2](i, j, k) = (ftypePML)Exz1;
-					split_field.coeff[4](i, j, k) = (ftypePML)Eyx1;
-					split_field.coeff[6](i, j, k) = (ftypePML)Eyz1;
-					split_field.coeff[8](i, j, k) = (ftypePML)Ezx1;
-					split_field.coeff[10](i, j, k) = (ftypePML)Ezy1;
+					arr_coef.Exy1(i, j, k) = (ftypePML)Exy1;
+					arr_coef.Exz1(i, j, k) = (ftypePML)Exz1;
+					arr_coef.Eyx1(i, j, k) = (ftypePML)Eyx1;
+					arr_coef.Eyz1(i, j, k) = (ftypePML)Eyz1;
+					arr_coef.Ezx1(i, j, k) = (ftypePML)Ezx1;
+					arr_coef.Ezy1(i, j, k) = (ftypePML)Ezy1;
 
-					split_field.coeff[12](i, j, k) = (ftypePML)Bxy1;
-					split_field.coeff[14](i, j, k) = (ftypePML)Bxz1;
-					split_field.coeff[16](i, j, k) = (ftypePML)Byx1;
-					split_field.coeff[18](i, j, k) = (ftypePML)Byz1;
-					split_field.coeff[20](i, j, k) = (ftypePML)Bzx1;
-					split_field.coeff[22](i, j, k) = (ftypePML)Bzy1;
+					arr_coef.Bxy1(i, j, k) = (ftypePML)Bxy1;
+					arr_coef.Bxz1(i, j, k) = (ftypePML)Bxz1;
+					arr_coef.Byx1(i, j, k) = (ftypePML)Byx1;
+					arr_coef.Byz1(i, j, k) = (ftypePML)Byz1;
+					arr_coef.Bzx1(i, j, k) = (ftypePML)Bzx1;
+					arr_coef.Bzy1(i, j, k) = (ftypePML)Bzy1;
 
-					if (Sigma[0](i, j, k) != (ftypePML)0.0) {
-						split_field.coeff[5](i, j, k) = 1.0 / Sigma[0](i, j, k) - Eyx1 / Sigma[0](i, j, k);
-						split_field.coeff[9](i, j, k) = 1.0 / Sigma[0](i, j, k) - Ezx1 / Sigma[0](i, j, k);
+					if (arr_sigma.sigmaEx(i, j, k) != (ftypePML)0.0) {
+						arr_coef.Eyx2(i, j, k) = 1.0 / arr_sigma.sigmaEx(i, j, k) - Eyx1 / arr_sigma.sigmaEx(i, j, k);
+						arr_coef.Ezx2(i, j, k) = 1.0 / arr_sigma.sigmaEx(i, j, k) - Ezx1 / arr_sigma.sigmaEx(i, j, k);
 					} else {
-						split_field.coeff[5](i, j, k) = dt;
-						split_field.coeff[9](i, j, k) = dt;
+						arr_coef.Eyx2(i, j, k) = dt;
+						arr_coef.Ezx2(i, j, k) = dt;
 					}
-					if (Sigma[1](i, j, k) != (ftypePML)0.0) {
-						split_field.coeff[1](i, j, k) = 1.0 / Sigma[1](i, j, k) - Exy1 / Sigma[1](i, j, k);
-						split_field.coeff[11](i, j, k) = 1.0 / Sigma[1](i, j, k) - Ezy1 / Sigma[1](i, j, k);
+					if (arr_sigma.sigmaEy(i, j, k) != (ftypePML)0.0) {
+						arr_coef.Exy2(i, j, k) = 1.0 / arr_sigma.sigmaEy(i, j, k) - Exy1 / arr_sigma.sigmaEy(i, j, k);
+						arr_coef.Ezy2(i, j, k) = 1.0 / arr_sigma.sigmaEy(i, j, k) - Ezy1 / arr_sigma.sigmaEy(i, j, k);
 					} else {
-						split_field.coeff[1](i, j, k) = dt;
-						split_field.coeff[11](i, j, k) = dt;
+						arr_coef.Exy2(i, j, k) = dt;
+						arr_coef.Ezy2(i, j, k) = dt;
 					}
-					if (Sigma[2](i, j, k) != (ftypePML)0.0) {
-						split_field.coeff[3](i, j, k) = 1.0 / Sigma[2](i, j, k) - Exz1 / Sigma[2](i, j, k);
-						split_field.coeff[7](i, j, k) = 1.0 / Sigma[2](i, j, k) - Eyz1 / Sigma[2](i, j, k);
+					if (arr_sigma.sigmaEz(i, j, k) != (ftypePML)0.0) {
+						arr_coef.Ezx2(i, j, k) = 1.0 / arr_sigma.sigmaEz(i, j, k) - Exz1 / arr_sigma.sigmaEz(i, j, k);
+						arr_coef.Eyz2(i, j, k) = 1.0 / arr_sigma.sigmaEz(i, j, k) - Eyz1 / arr_sigma.sigmaEz(i, j, k);
 					} else {
-						split_field.coeff[3](i, j, k) = dt;
-						split_field.coeff[7](i, j, k) = dt;
+						arr_coef.Ezx2(i, j, k) = dt;
+						arr_coef.Eyz2(i, j, k) = dt;
 					}
-					if (Sigma[3](i, j, k) != (ftypePML)0.0) {
-						split_field.coeff[17](i, j, k) = 1.0 / Sigma[3](i, j, k) - Byx1 / Sigma[3](i, j, k);
-						split_field.coeff[21](i, j, k) = 1.0 / Sigma[3](i, j, k) - Bzx1 / Sigma[3](i, j, k);
+					if (arr_sigma.sigmaBx(i, j, k) != (ftypePML)0.0) {
+						arr_coef.Byx2(i, j, k) = 1.0 / arr_sigma.sigmaBx(i, j, k) - Byx1 / arr_sigma.sigmaBx(i, j, k);
+						arr_coef.Bzx2(i, j, k) = 1.0 / arr_sigma.sigmaBx(i, j, k) - Bzx1 / arr_sigma.sigmaBx(i, j, k);
 					} else {
-						split_field.coeff[17](i, j, k) = dt;
-						split_field.coeff[21](i, j, k) = dt;
+						arr_coef.Byx2(i, j, k) = dt;
+						arr_coef.Bzx2(i, j, k) = dt;
 					}
-					if (Sigma[4](i, j, k) != (ftypePML)0.0) {
-						split_field.coeff[13](i, j, k) = 1.0 / Sigma[4](i, j, k) - Bxy1 / Sigma[4](i, j, k);
-						split_field.coeff[23](i, j, k) = 1.0 / Sigma[4](i, j, k) - Bzy1 / Sigma[4](i, j, k);
+					if (arr_sigma.sigmaBy(i, j, k) != (ftypePML)0.0) {
+						arr_coef.Bxy2(i, j, k) = 1.0 / arr_sigma.sigmaBy(i, j, k) - Bxy1 / arr_sigma.sigmaBy(i, j, k);
+						arr_coef.Bzy2(i, j, k) = 1.0 / arr_sigma.sigmaBy(i, j, k) - Bzy1 / arr_sigma.sigmaBy(i, j, k);
 					} else {
-						split_field.coeff[13](i, j, k) = dt;
-						split_field.coeff[23](i, j, k) = dt;
+						arr_coef.Bxy2(i, j, k) = dt;
+						arr_coef.Bzy2(i, j, k) = dt;
 					}
-					if (Sigma[5](i, j, k) != (ftypePML)0.0) {
-						split_field.coeff[15](i, j, k) = 1.0 / Sigma[5](i, j, k) - Bxz1 / Sigma[5](i, j, k);
-						split_field.coeff[19](i, j, k) = 1.0 / Sigma[5](i, j, k) - Byz1 / Sigma[5](i, j, k);
+					if (arr_sigma.sigmaBz(i, j, k) != (ftypePML)0.0) {
+						arr_coef.Bxz2(i, j, k) = 1.0 / arr_sigma.sigmaBz(i, j, k) - Bxz1 / arr_sigma.sigmaBz(i, j, k);
+						arr_coef.Byz2(i, j, k) = 1.0 / arr_sigma.sigmaBz(i, j, k) - Byz1 / arr_sigma.sigmaBz(i, j, k);
 					} else {
-						split_field.coeff[15](i, j, k) = dt;
-						split_field.coeff[19](i, j, k) = dt;
+						arr_coef.Bxz2(i, j, k) = dt;
+						arr_coef.Byz2(i, j, k) = dt;
 					}
 				}
 			}

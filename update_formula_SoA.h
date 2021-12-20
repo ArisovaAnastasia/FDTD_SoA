@@ -42,28 +42,28 @@ void Update_magnetic_field_SoA(Fields<ftype>& field,
 }
 
 template <class ftype, class ftypePML>
-void Update_electric_field_PML_SoA(Fields<ftype>& field, SplitFields<ftypePML>& split_field,
+void Update_electric_field_PML_SoA(Fields<ftype>& field, SplitFields<ftypePML>& split_field, Coefficient<ftypePML>& arr_coef,
 	ftypePML _1dx, ftypePML _1dy, ftypePML _1dz, int i, int j, int k)
 {
 	ftypePML tExy, tExz, tEyx, tEyz, tEzx, tEzy;
  
-	tExy = split_field.Exy(i, j, k) * split_field.coeff[0](i, j, k) +
-		((ftypePML)field.Bz(i, j + 1, k) - (ftypePML)field.Bz(i, j, k)) * split_field.coeff[1](i, j, k) * (_1dy);
+	tExy = split_field.Exy(i, j, k) * arr_coef.Exy1(i, j, k) +
+		((ftypePML)field.Bz(i, j + 1, k) - (ftypePML)field.Bz(i, j, k)) * arr_coef.Exy2(i, j, k) * (_1dy);
 
-	tExz = split_field.Exz(i, j, k) * split_field.coeff[2](i, j, k) -
-		((ftypePML)field.By(i, j, k + 1) - (ftypePML)field.By(i, j, k)) * split_field.coeff[3](i, j, k) * (_1dz);
+	tExz = split_field.Exz(i, j, k) * arr_coef.Exz1(i, j, k) -
+		((ftypePML)field.By(i, j, k + 1) - (ftypePML)field.By(i, j, k)) * arr_coef.Exz2(i, j, k) * (_1dz);
 
-	tEyx = split_field.Eyx(i, j, k) * split_field.coeff[4](i, j, k) -
-		((ftypePML)field.Bz(i + 1, j, k) - (ftypePML)field.Bz(i, j, k)) * split_field.coeff[5](i, j, k) * (_1dx);
+	tEyx = split_field.Eyx(i, j, k) * arr_coef.Eyx1(i, j, k) -
+		((ftypePML)field.Bz(i + 1, j, k) - (ftypePML)field.Bz(i, j, k)) * arr_coef.Eyx2(i, j, k) * (_1dx);
 
-	tEyz = split_field.Eyz(i, j, k) * split_field.coeff[6](i, j, k) +
-		((ftypePML)field.Bx(i, j, k + 1) - (ftypePML)field.Bx(i, j, k)) * split_field.coeff[7](i, j, k) * (_1dz);
+	tEyz = split_field.Eyz(i, j, k) * arr_coef.Eyz1(i, j, k) +
+		((ftypePML)field.Bx(i, j, k + 1) - (ftypePML)field.Bx(i, j, k)) * arr_coef.Eyz2(i, j, k) * (_1dz);
 
-	tEzx = split_field.Ezx(i, j, k) * split_field.coeff[8](i, j, k) +
-		((ftypePML)field.By(i + 1, j, k) - (ftypePML)field.By(i, j, k)) * split_field.coeff[9](i, j, k) * (_1dx);
+	tEzx = split_field.Ezx(i, j, k) * arr_coef.Ezx1(i, j, k) +
+		((ftypePML)field.By(i + 1, j, k) - (ftypePML)field.By(i, j, k)) * arr_coef.Ezx2(i, j, k) * (_1dx);
 
-	tEzy = split_field.Ezy(i, j, k) * split_field.coeff[10](i, j, k) -
-		((ftypePML)field.Bx(i, j + 1, k) - (ftypePML)field.Bx(i, j, k)) * split_field.coeff[11](i, j, k) * (_1dy);
+	tEzy = split_field.Ezy(i, j, k) * arr_coef.Ezy1(i, j, k) -
+		((ftypePML)field.Bx(i, j + 1, k) - (ftypePML)field.Bx(i, j, k)) * arr_coef.Ezy2(i, j, k) * (_1dy);
 
 	split_field.Exy(i, j, k) = tExy;
 	split_field.Exz(i, j, k) = tExz;
@@ -78,28 +78,28 @@ void Update_electric_field_PML_SoA(Fields<ftype>& field, SplitFields<ftypePML>& 
 }
 
 template <class ftype, class ftypePML>
-void Update_magnetic_field_PML_SoA(Fields<ftype>& field, SplitFields<ftypePML>& split_field,
+void Update_magnetic_field_PML_SoA(Fields<ftype>& field, SplitFields<ftypePML>& split_field, Coefficient<ftypePML>& arr_coef,
 	ftypePML _1dx, ftypePML _1dy, ftypePML _1dz, int i, int j, int k)
 {
 	ftypePML tBxy, tBxz, tByx, tByz, tBzx, tBzy;
 
-	tBxy = split_field.Bxy(i, j, k) * split_field.coeff[12](i, j, k) -
-		((ftypePML)field.Ez(i, j, k) - (ftypePML)field.Ez(i, j - 1, k)) * split_field.coeff[13](i, j, k) * (_1dy);
+	tBxy = split_field.Bxy(i, j, k) * arr_coef.Bxy1(i, j, k) -
+		((ftypePML)field.Ez(i, j, k) - (ftypePML)field.Ez(i, j - 1, k)) * arr_coef.Bxy2(i, j, k) * (_1dy);
 
-	tBxz = split_field.Bxz(i, j, k) * split_field.coeff[14](i, j, k) +
-		((ftypePML)field.Ey(i, j, k) - (ftypePML)field.Ey(i, j, k - 1)) * split_field.coeff[15](i, j, k) * (_1dz);
+	tBxz = split_field.Bxz(i, j, k) * arr_coef.Bxz1(i, j, k) +
+		((ftypePML)field.Ey(i, j, k) - (ftypePML)field.Ey(i, j, k - 1)) * arr_coef.Bxz2(i, j, k) * (_1dz);
 
-	tByx = split_field.Byx(i, j, k) * split_field.coeff[16](i, j, k) +
-		((ftypePML)field.Ez(i, j, k) - (ftypePML)field.Ez(i - 1, j, k)) * split_field.coeff[17](i, j, k) * (_1dx);
+	tByx = split_field.Byx(i, j, k) * arr_coef.Byx1(i, j, k) +
+		((ftypePML)field.Ez(i, j, k) - (ftypePML)field.Ez(i - 1, j, k)) * arr_coef.Byx2(i, j, k) * (_1dx);
 
-	tByz = split_field.Byz(i, j, k) * split_field.coeff[18](i, j, k) -
-		((ftypePML)field.Ex(i, j, k) - (ftypePML)field.Ex(i, j, k - 1)) * split_field.coeff[19](i, j, k) * (_1dz);
+	tByz = split_field.Byz(i, j, k) * arr_coef.Byz1(i, j, k) -
+		((ftypePML)field.Ex(i, j, k) - (ftypePML)field.Ex(i, j, k - 1)) * arr_coef.Byz2(i, j, k) * (_1dz);
 
-	tBzx = split_field.Bzx(i, j, k) * split_field.coeff[20](i, j, k) -
-		((ftypePML)field.Ey(i, j, k) - (ftypePML)field.Ey(i - 1, j, k)) * split_field.coeff[21](i, j, k) * (_1dx);
+	tBzx = split_field.Bzx(i, j, k) * arr_coef.Bzx1(i, j, k) -
+		((ftypePML)field.Ey(i, j, k) - (ftypePML)field.Ey(i - 1, j, k)) * arr_coef.Bzx2(i, j, k) * (_1dx);
 
-	tBzy = split_field.Bzy(i, j, k) * split_field.coeff[22](i, j, k) +
-		((ftypePML)field.Ex(i, j, k) - (ftypePML)field.Ex(i, j - 1, k)) * split_field.coeff[23](i, j, k) * (_1dy);
+	tBzy = split_field.Bzy(i, j, k) * arr_coef.Bzy1(i, j, k) +
+		((ftypePML)field.Ex(i, j, k) - (ftypePML)field.Ex(i, j - 1, k)) * arr_coef.Bzy2(i, j, k) * (_1dy);
 
 	split_field.Bxy(i, j, k) = tBxy;
 	split_field.Bxz(i, j, k) = tBxz;

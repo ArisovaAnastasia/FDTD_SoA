@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <chrono>
+//#include <mpi.h>
 #include "init_and_bound_conditions.h"
 #include "update_formula_SoA.h"
 
@@ -47,24 +48,25 @@ template <class ftype, class ftypePML>
 double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 	int delta_x, int delta_y, int delta_z, double sigma_x, double sigma_y)
 {
-	setlocale(LC_ALL, "Russian");
+	//setlocale(LC_ALL, "Russian");
 
 	int Nt = ceil(T / dt);
 	std::cout << Nt << std::endl;
 
 	Fields<ftype> field(Nx, Ny, Nz, delta_x, delta_y, delta_z);
 	SplitFields<ftypePML> split_field(Nx, Ny, Nz, delta_x, delta_y, delta_z);
-	std::vector<data3d<ftypePML> > arr_sigma(6);
+	Sigma<ftypePML> arr_sigma(Nx, Ny, Nz, delta_x, delta_y, delta_z);
+	Coefficient<ftypePML> arr_coef(Nx, Ny, Nz, delta_x, delta_y, delta_z);
 
 	std::pair<ftype, ftype> ab(0.0, 4.0 * M_PI), cd(0.0, 16.0 * M_PI), fg(0.0, 16.0 * M_PI);
 	ftype dx = (ab.second - ab.first) / (ftype)Nx, dy = (cd.second - cd.first) / (ftype)Ny, dz = (fg.second - fg.first) / (ftype)Nz;
 
 	ftype dt_x = dt / (dx), dt_y = dt / (dy), dt_z = dt / (dz);
 	ftypePML _1dx = (ftypePML)1.0 / dx, _1dy = (ftypePML)1.0 / dy, _1dz = (ftypePML)1.0 / dz;
-	std::vector<double> vec_energy(Nt + 1);
+	//std::vector<double> vec_energy(Nt + 1);
 
 	Init_Sigma_SoA<double>(arr_sigma, n, Nx, Ny, Nz, delta_x, delta_y, delta_z, sigma_x, sigma_y);
-	Init_Coeff_SoA<ftypePML>(split_field, arr_sigma, dt);
+	Init_Coeff_SoA<ftypePML>(arr_coef, arr_sigma, dt);
 
 	Check_Curant(dx, dy, dz, dt);
 
@@ -73,9 +75,9 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 
 	for (int it = 0; it < Nt; ++it)
 	{
-		//if (it % 10 == 0) {
-		//	std::cout << it << std::endl;
-		//}
+		/*if (it % 100 == 0) {
+			std::cout << it << std::endl;
+		}*/
 
 		std::cout << it << std::endl;
 
@@ -94,7 +96,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = 1; i < Nx + 2 * delta_x + 1; ++i)
 			for (int j = 1; j < Ny + 2 * delta_y + 1; ++j)
 				for (int k = 1; k < delta_z + 1; ++k) {
-					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 		//грань от 0,0,0 по хz
@@ -102,7 +104,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = 1; i < Nx + 2 * delta_x + 1; ++i)
 			for (int j = 1; j < delta_y + 1; ++j)
 				for (int k = delta_z + 1; k < Nz + 2 * delta_z + 1; ++k) {
-					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 		//грань от 0,0,0 по yz
@@ -110,7 +112,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = 1; i < delta_x + 1; ++i)
 			for (int j = delta_y + 1; j < Ny + 2 * delta_y + 1; ++j)
 				for (int k = delta_z + 1; k < Nz + 2 * delta_z + 1; ++k) {
-					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 		//грань от n,0,0 по yz
@@ -118,7 +120,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = Nx + delta_x + 1; i < Nx + 2 * delta_x + 1; ++i)
 			for (int j = delta_y + 1; j < Ny + 2 * delta_y + 1; ++j)
 				for (int k = delta_z + 1; k < Nz + 2 * delta_z + 1; ++k) {
-					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 		//грань от 0,m,0 по xz
@@ -126,7 +128,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = delta_x + 1; i < Nx + delta_x + 1; ++i)
 			for (int j = Ny + delta_y + 1; j < Ny + 2 * delta_y + 1; ++j)
 				for (int k = delta_z + 1; k < Nz + 2 * delta_z + 1; ++k) {
-					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 		//грань от 0,0,k по xy
@@ -134,7 +136,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = delta_x + 1; i < Nx + delta_x + 1; ++i)
 			for (int j = delta_y + 1; j < Ny + delta_y + 1; ++j)
 				for (int k = Nz + delta_z + 1; k < Nz + 2 * delta_z + 1; ++k) {
-					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_electric_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 
@@ -150,7 +152,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = 1; i < Nx + 2 * delta_x + 1; ++i)
 			for (int j = 1; j < Ny + 2 * delta_y + 1; ++j)
 				for (int k = 1; k < delta_z + 1; ++k) {
-					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 		//грань от 0,0,0 по хz
@@ -158,7 +160,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = 1; i < Nx + 2 * delta_x + 1; ++i)
 			for (int j = 1; j < delta_y + 1; ++j)
 				for (int k = delta_z + 1; k < Nz + 2 * delta_z + 1; ++k) {
-					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 		//грань от 0,0,0 по yz
@@ -166,7 +168,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = 1; i < delta_x + 1; ++i)
 			for (int j = delta_y + 1; j < Ny + 2 * delta_y + 1; ++j)
 				for (int k = delta_z + 1; k < Nz + 2 * delta_z + 1; ++k) {
-					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 		//грань от n,0,0 по yz
@@ -174,7 +176,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = Nx + delta_x + 1; i < Nx + 2 * delta_x + 1; ++i)
 			for (int j = delta_y + 1; j < Ny + 2 * delta_y + 1; ++j)
 				for (int k = delta_z + 1; k < Nz + 2 * delta_z + 1; ++k) {
-					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 		//грань от 0,m,0 по xz
@@ -182,7 +184,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = delta_x + 1; i < Nx + delta_x + 1; ++i)
 			for (int j = Ny + delta_y + 1; j < Ny + 2 * delta_y + 1; ++j)
 				for (int k = delta_z + 1; k < Nz + 2 * delta_z + 1; ++k) {
-					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 		//грань от 0,0,k по xy
@@ -190,7 +192,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 		for (int i = delta_x + 1; i < Nx + delta_x + 1; ++i)
 			for (int j = delta_y + 1; j < Ny + delta_y + 1; ++j)
 				for (int k = Nz + delta_z + 1; k < Nz + 2 * delta_z + 1; ++k) {
-					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field,
+					Update_magnetic_field_PML_SoA<ftype, ftypePML>(field, split_field, arr_coef,
 						_1dx, _1dy, _1dz, i, j, k);
 				}
 	}
@@ -199,13 +201,20 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 
 	std::chrono::duration<double> elapsed_seconds = end - start;
 
-	vec_energy[Nt] = CalculateEnergy_SoA(field);
+	//vec_energy[Nt] = CalculateEnergy_SoA(field);
 
 
 	//double result = vec_energy[Nt] / vec_energy[2512];
 
-//	std::cout << "reflection coefficient = " << vec_energy[Nt] / vec_energy[2512] << "  " << vec_energy[Nt] / vec_energy[Nt / 2] << "\n";
+	//std::cout << "reflection coefficient = " << vec_energy[Nt] / vec_energy[2512] << "  " << vec_energy[Nt] / vec_energy[Nt / 2] << "\n";
+	/*
+	field.~Fields();
+	split_field.~SplitFields();
+	arr_coef.~Coefficient();
+	arr_sigma.~Sigma();
+	*/
 	std::cout << "elapsed time = " << elapsed_seconds.count() << "\n";
+
 
 	return 0;
 }
