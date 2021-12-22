@@ -13,8 +13,13 @@ public:
 		this->delta_x = delta_x; this->delta_y = delta_y; this->delta_z = delta_z;
 	}
 	inline type_data& operator()(int i, int j, int l) {
+		/*
+		if (i<0 || j<0 || l<0 || i>=(n + 2 * delta_x + 2) || j>= (m + 2 * delta_y + 2) || l>= (k + 2 * delta_z + 2)){
+			std::cout << "ERROR" << std::endl;
+		}*/
 		return data[i * (m + 2 * delta_y + 2) * (k + 2 * delta_z + 2) + j * (k + 2 * delta_z + 2) + l];
 	}
+
 	int Get_Nx() {
 		return n;
 	}
