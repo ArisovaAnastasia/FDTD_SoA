@@ -7,7 +7,7 @@ int main() {
 
 	//setlocale(LC_ALL, "english");
 
-	omp_set_num_threads(4);
+	omp_set_num_threads(8);
 
 	double n = 4;
 

@@ -87,10 +87,15 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 #pragma omp parallel for collapse(2)
 			//внутренн€€ область
 		for (int i = delta_x + 1; i < Nx + delta_x + 1; ++i)
-			for (int j = delta_y + 1; j < Ny + delta_y + 1; ++j)
+			for (int j = delta_y + 1; j < Ny + delta_y + 1; ++j) {
 				for (int k = delta_z + 1; k < Nz + delta_z + 1; ++k) {
 					Update_electric_field_SoA<ftype>(field, dt_x, dt_y, dt_z, i, j, k);
+
 				}
+				printf("Success\n");
+				//fflush(stdout);
+
+			}
 		//грань от 0,0,0 по хy
 #pragma omp parallel for collapse(2)
 		for (int i = 1; i < Nx + 2 * delta_x + 1; ++i)
@@ -207,12 +212,7 @@ double run_fdtd(double n, int Nx, int Ny, int Nz, ftype T, ftype dt,
 	//double result = vec_energy[Nt] / vec_energy[2512];
 
 	//std::cout << "reflection coefficient = " << vec_energy[Nt] / vec_energy[2512] << "  " << vec_energy[Nt] / vec_energy[Nt / 2] << "\n";
-	/*
-	field.~Fields();
-	split_field.~SplitFields();
-	arr_coef.~Coefficient();
-	arr_sigma.~Sigma();
-	*/
+
 	std::cout << "elapsed time = " << elapsed_seconds.count() << "\n";
 
 
